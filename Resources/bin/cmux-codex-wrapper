@@ -731,7 +731,16 @@ fi
 # no Computer Use provider rather than falling back to Codex Computer Use.
 # This policy is intentionally scoped to cmux-launched sessions. Plain Codex
 # outside cmux keeps its normal native Computer Use behavior.
-cmux_codex_native_computer_use_args=(--disable computer_use)
+#
+# The CMUX_COMPUTER_USE_MCP_DISABLED=1 kill switch opts the session out of
+# cmux-cua entirely, so there is no provider to protect and Codex keeps its own
+# setting. Leaving argv untouched also matters to Codex itself: any
+# -c/--enable/--disable override sends the TUI to embedded mode instead of the
+# shared app-server daemon (#14853).
+cmux_codex_native_computer_use_args=()
+if [[ "${CMUX_COMPUTER_USE_MCP_DISABLED:-0}" != "1" ]]; then
+    cmux_codex_native_computer_use_args=(--disable computer_use)
+fi
 
 # Export launch identity so the hook subprocesses and cmux's agent-pid /
 # ended-detection can bind this Codex to its surface and pid. Because we exec

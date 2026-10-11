@@ -173,7 +173,11 @@ its machine-readable stdio protocol—not a separate user-installed service—an
 no Node, Sky, or legacy bridge is involved.
 
 Set `CMUX_COMPUTER_USE_MCP_DISABLED=1` before launching an agent to disable
-automatic computer-use MCP injection. There is no ambient executable override:
+automatic computer-use MCP injection. For Codex it also drops the wrapper's
+`--disable computer_use`, so Codex keeps its own Computer Use setting. With
+persistent hooks the wrapper then adds no Codex flags, and Codex can attach to
+its shared app-server daemon; any `-c`, `--enable` or `--disable` override
+starts an embedded app-server instead. There is no ambient executable override:
 both wrappers fail closed unless cmux has installed its tag-scoped helper.
 That installed helper's `cmux-cua` executable is the MCP client for both
 Claude Code and Codex.

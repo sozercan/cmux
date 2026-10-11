@@ -35,8 +35,9 @@ or permissions are not a reason to begin setup automatically.
   discovering this skill is not a request to use it, and it must not open a
   permission window or perform GUI work.
 - In Codex sessions launched by cmux, the wrapper disables Codex's native
-  `computer_use` provider. When the user says `$cmux-cua`, use only the
-  namespaced `cmux-cua` MCP tools below. Never substitute Codex's built-in
+  `computer_use` provider, except under the `CMUX_COMPUTER_USE_MCP_DISABLED=1`
+  kill switch, which leaves Codex's own setting in place. When the user says
+  `$cmux-cua`, use only the namespaced `cmux-cua` MCP tools below. Never substitute Codex's built-in
   `computer` tool, another CUA connector, or a direct helper launch. If the
   `cmux-cua` tools are absent or unavailable, report that they are unavailable
   and stop; do not silently switch providers.
