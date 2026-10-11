@@ -531,6 +531,7 @@ def run_wrapper(
     group_writable_ancestor: bool = False,
     disabled: bool = False,
     hooks_inject_fails: bool = False,
+    hooks_inject_empty: bool = False,
     hooks_disabled: bool = False,
     dead_socket: bool = False,
     auth_token: bool = True,
@@ -597,11 +598,13 @@ def run_wrapper(
             real_dir / "codex",
             FAKE_CODEX % CMUX_CUA_TOOL_ROSTER,
         )
-        inject_args_body = (
-            "  exit 1\n"
-            if hooks_inject_fails
-            else "  printf '%s\\0' --enable hooks -c hooks.cmux-test=true\n  exit 0\n"
-        )
+        if hooks_inject_fails:
+            inject_args_body = "  exit 1\n"
+        elif hooks_inject_empty:
+            # Reconciled persistent hooks: the emitter succeeds with no overrides.
+            inject_args_body = "  exit 0\n"
+        else:
+            inject_args_body = "  printf '%s\\0' --enable hooks -c hooks.cmux-test=true\n  exit 0\n"
         make_executable(
             wrapper_dir / "cmux",
             f"""#!/usr/bin/env bash
@@ -1752,6 +1755,21 @@ def test_codex_skips_when_disabled(failures: list[str]) -> None:
     expect(skill["exists"] is False, f"expected no global skill with kill switch, got {skill}", failures)
 
 
+def test_codex_kill_switch_with_persistent_hooks_keeps_argv_unchanged(failures: list[str]) -> None:
+    # Codex sends any -c/--enable/--disable override to embedded mode instead
+    # of its shared app-server daemon, and an embedded TUI holds the thread's
+    # writer lock against the daemon's remote-control clients. With the kill
+    # switch there is no cmux-cua provider to protect, so once hooks are
+    # persistent the wrapper must add nothing, not even --disable computer_use.
+    code, args, stderr, _ = run_wrapper(["hello"], disabled=True, hooks_inject_empty=True)
+    expect(code == 0, f"kill-switch wrapper exited {code}: {stderr}", failures)
+    expect(
+        args == ["hello"],
+        f"kill switch with persistent hooks must leave Codex argv unchanged, got {args}",
+        failures,
+    )
+
+
 def test_codex_skips_when_live_app_setting_is_disabled(failures: list[str]) -> None:
     code, args, stderr, _ = run_wrapper(["hello"], live_app_enabled=False)
     expect(code == 0, f"live-disabled wrapper exited {code}: {stderr}", failures)
@@ -1895,6 +1913,7 @@ def main() -> int:
     test_codex_skips_when_driver_unavailable(failures)
     test_codex_skips_when_installed_broker_is_unavailable(failures)
     test_codex_skips_when_disabled(failures)
+    test_codex_kill_switch_with_persistent_hooks_keeps_argv_unchanged(failures)
     test_codex_skips_when_live_app_setting_is_disabled(failures)
     test_codex_skips_when_daemon_credential_is_missing(failures)
     test_codex_fork_gets_hooks_and_cmux_cua(failures)
